@@ -62,6 +62,5 @@ public class ScoreboardModule implements Listener {
 			sy.setScore(l.getBlockY());
 			sz.setScore(l.getBlockZ());
 		}
-		
 	}
 }
