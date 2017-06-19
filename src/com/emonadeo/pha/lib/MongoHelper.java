@@ -11,13 +11,15 @@ public class MongoHelper {
 	public static Document createStat(MongoCollection<Document> collection, UUID uniqueId, String key, Object value) {
 		Document doc = getStat(collection, uniqueId);
 		
-		// Prevent NullPointerException
-		if(doc == null)
+		// Replace if it exists, Insert if it doesn't
+		if(doc == null) {
 			doc = new Document("_id", uniqueId.toString());
-		
-		// Append & Insert
-		doc.append(key, value);
-		collection.replaceOne(new Document("_id", uniqueId.toString()), doc);
+			doc.append(key, value);
+			collection.insertOne(doc);
+		} else {
+			doc.append(key, value);
+			collection.replaceOne(new Document("_id", uniqueId.toString()), doc);
+		}
 		
 		return doc;
 	}
@@ -26,17 +28,12 @@ public class MongoHelper {
 		Document doc = getStat(collection, uniqueId);
 		
 		// Prevent NullPointerException
-		if(doc == null)
+		if(doc == null) {
 			doc = new Document("_id", uniqueId.toString());
-		
-		// Create Key if it's NULL, increment it otherwise
-		if(doc.containsKey(key)) {
-			doc.put(key, doc.getInteger(key) + 1);
+			collection.insertOne(increment(doc, key));
 		} else {
-			doc.append(key, 1);
+			collection.replaceOne(new Document("_id", uniqueId.toString()), increment(doc, key));
 		}
-		
-		collection.replaceOne(new Document("_id", uniqueId.toString()), doc);
 		return doc;
 	}
 	
@@ -44,5 +41,16 @@ public class MongoHelper {
 		// Find the document by UUID
 		System.out.println(collection.find(new Document("_id", uniqueId.toString())).first());
 		return collection.find(new Document("_id", uniqueId.toString())).first();
+	}
+	
+	// Methods
+	private static Document increment(Document doc, String key) {
+		// Create Key if it's NULL, increment it otherwise
+		if(doc.containsKey(key)) {
+			doc.put(key, doc.getInteger(key) + 1);
+		} else {
+			doc.append(key, 1);
+		}
+		return doc;
 	}
 }
